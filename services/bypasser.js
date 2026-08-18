@@ -254,8 +254,10 @@ async function resolveBypass(targetUrl) {
     }
   }
 
+  let advancedAttempted = false;
   // Jika terdeteksi shortlink berproteksi khusus (ShrinkMe, Linkvertise, Droplink, dll), langsung gunakan solver engine
   if (isProtectedDomain(currentUrl)) {
+    advancedAttempted = true;
     logs.push(`Menembus proteksi token & countdown...`);
     const advancedResolved = await resolveViaAdvancedEngine(currentUrl, logs);
     if (advancedResolved && advancedResolved !== currentUrl) {
@@ -342,8 +344,8 @@ async function resolveBypass(targetUrl) {
     }
   }
 
-  // Jika setelah redirect URL masih sama dengan input awal dan merupakan domain shortlink
-  if (currentUrl === targetUrl && (isProtectedDomain(currentUrl) || serviceName !== 'Generic Shortlink / URL')) {
+  // Jika setelah redirect URL masih sama dengan input awal dan belum pernah dicoba engine khusus
+  if (!advancedAttempted && currentUrl === targetUrl && (isProtectedDomain(currentUrl) || serviceName !== 'Generic Shortlink / URL')) {
     logs.push('Basic tracer did not reach destination. Triggering advanced bypass engine fallback...');
     const advancedResolved = await resolveViaAdvancedEngine(targetUrl, logs);
     if (advancedResolved && advancedResolved !== targetUrl) {

@@ -1,6 +1,16 @@
 let resultUrl = null;
 const API_BASE = window.API_BASE || "";
 
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function el(id) { return document.getElementById(id); }
 function show(id) { const e = el(id); if (e) e.classList.remove("hidden"); }
 function hide(id) { const e = el(id); if (e) e.classList.add("hidden"); }
@@ -749,7 +759,7 @@ async function resolveBulk() {
   const btn = el("bulkResolveBtn");
   const btnText = el("bulkBtnText");
   btn.disabled = true;
-  if (btnText) btnText.textContent = "Memproses Bulk...";
+  if (btnText) btnText.textContent = "Memproses Antrean...";
 
   show("bulkProgress");
   show("bulkResultsWrap");
@@ -762,11 +772,17 @@ async function resolveBulk() {
   let successCount = 0;
 
   function updateBulkProgressBar() {
-    const pct = Math.round((finishedCount / total) * 100);
+    const pct = total > 0 ? Math.round((finishedCount / total) * 100) : 0;
     const fill = el("bulkProgressFill");
     if (fill) fill.style.width = pct + "%";
     const textEl = el("bulkProgressText");
-    if (textEl) textEl.textContent = `Memproses ${finishedCount} dari ${total} link...`;
+    if (textEl) {
+      if (finishedCount < total) {
+        textEl.textContent = `Memproses link ke-${finishedCount + 1} dari ${total}...`;
+      } else {
+        textEl.textContent = `Selesai! ${successCount} dari ${total} link berhasil dibuka.`;
+      }
+    }
     const numEl = el("bulkProgressPercent");
     if (numEl) numEl.textContent = pct + "%";
   }
@@ -782,7 +798,7 @@ async function resolveBulk() {
     item.innerHTML = `
       <div class="bulk-item-top">
         <div class="bulk-item-badges">
-          <span class="bulk-status-tag pending">Menunggu...</span>
+          <span class="bulk-status-tag pending" id="bulk-tag-${idx}">Antre #${idx + 1}</span>
           <span class="bulk-service-tag">${detectServiceName(url)}</span>
         </div>
         <div class="bulk-item-actions hidden" id="bulk-act-${idx}">
@@ -791,57 +807,69 @@ async function resolveBulk() {
         </div>
       </div>
       <div class="bulk-item-orig">${escapeHtml(url)}</div>
-      <div class="bulk-item-res">Sedang antre...</div>
+      <div class="bulk-item-res" id="bulk-res-${idx}">Menunggu giliran antrean...</div>
     `;
     el("bulkResultsList").appendChild(item);
     itemElements.push(item);
   });
 
-  // Concurrency paralel (hingga 4 link bersamaan agar cepat) & Cache duplikat
-  const concurrency = 4;
-  let currentIndex = 0;
   const linkCache = {};
 
-  async function worker() {
-    while (currentIndex < lines.length) {
-      const idx = currentIndex++;
-      const rawUrl = lines[idx];
-      let finalUrl = null;
-      let success = false;
-      let service = detectServiceName(rawUrl);
+  // Proses SATU PER SATU secara antrean berurutan (Sequential Queue)
+  for (let idx = 0; idx < lines.length; idx++) {
+    const rawUrl = lines[idx];
+    let finalUrl = null;
+    let success = false;
+    let service = detectServiceName(rawUrl);
 
-      const itemEl = itemElements[idx];
-      if (itemEl) {
-        itemEl.querySelector(".bulk-status-tag").textContent = "Memproses...";
-        itemEl.querySelector(".bulk-item-res").textContent = "Membuka proteksi shortlink...";
-      }
+    const itemEl = itemElements[idx];
+    const statusTag = itemEl?.querySelector(`#bulk-tag-${idx}`);
+    const resEl = itemEl?.querySelector(`#bulk-res-${idx}`);
 
-      try {
-        let norm = normalizeUrl(rawUrl);
+    if (statusTag) {
+      statusTag.className = "bulk-status-tag processing";
+      statusTag.textContent = "Memproses...";
+    }
+    if (resEl) {
+      resEl.textContent = "Membuka proteksi shortlink...";
+    }
 
-        // Cek jika link ini duplikat yang sudah pernah di-solve dalam batch yang sama
-        if (linkCache[norm]) {
-          finalUrl = linkCache[norm].finalUrl;
-          service = linkCache[norm].service;
-          success = linkCache[norm].success;
+    updateBulkProgressBar();
+
+    try {
+      let norm = normalizeUrl(rawUrl);
+
+      // Cek jika link ini duplikat yang sudah pernah di-solve dalam batch yang sama
+      if (linkCache[norm]) {
+        finalUrl = linkCache[norm].finalUrl;
+        service = linkCache[norm].service;
+        success = linkCache[norm].success;
+      } else {
+        const pd = norm.match(/pixeldrain\.com\/u\/([a-zA-Z0-9_-]+)/i);
+        const gd = norm.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([a-zA-Z0-9_-]+)/i);
+
+        if (pd) {
+          finalUrl = `https://pixeldrain.com/api/file/${pd[1]}`;
+          service = "PixelDrain";
+          success = true;
+        } else if (gd) {
+          finalUrl = `https://drive.google.com/uc?export=download&id=${gd[1]}`;
+          service = "Google Drive";
+          success = true;
         } else {
-          const pd = norm.match(/pixeldrain\.com\/u\/([a-zA-Z0-9_-]+)/i);
-          const gd = norm.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([a-zA-Z0-9_-]+)/i);
+          // Gunakan AbortController dengan timeout 35 detik agar tidak pernah menggantung selamanya
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 35000);
 
-          if (pd) {
-            finalUrl = `https://pixeldrain.com/api/file/${pd[1]}`;
-            service = "PixelDrain";
-            success = true;
-          } else if (gd) {
-            finalUrl = `https://drive.google.com/uc?export=download&id=${gd[1]}`;
-            service = "Google Drive";
-            success = true;
-          } else {
+          try {
             const res = await fetch(`${API_BASE}/api/organic`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ url: norm })
+              body: JSON.stringify({ url: norm }),
+              signal: controller.signal
             });
+            clearTimeout(timeoutId);
+
             const data = await res.json();
             if (data.success && data.resolved) {
               finalUrl = data.resolved;
@@ -851,67 +879,71 @@ async function resolveBulk() {
               finalUrl = data.error || "Gagal membuka link";
               success = false;
             }
+          } catch (fetchErr) {
+            clearTimeout(timeoutId);
+            if (fetchErr.name === "AbortError") {
+              finalUrl = "Timeout: Server bypass butuh waktu terlalu lama";
+            } else {
+              finalUrl = fetchErr.message || "Network Error";
+            }
+            success = false;
           }
-
-          linkCache[norm] = { finalUrl, service, success };
         }
-      } catch (err) {
-        finalUrl = err.message || "Network Error";
-        success = false;
+
+        linkCache[norm] = { finalUrl, service, success };
       }
+    } catch (err) {
+      finalUrl = err.message || "Error saat memproses";
+      success = false;
+    }
 
-      finishedCount++;
-      if (success) successCount++;
-      el("bulkSuccessCount").textContent = successCount;
+    finishedCount++;
+    if (success) successCount++;
+    el("bulkSuccessCount").textContent = successCount;
 
-      bulkResultsData[idx] = {
-        original: rawUrl,
-        resolved: finalUrl,
-        success,
-        service
-      };
+    bulkResultsData[idx] = {
+      original: rawUrl,
+      resolved: finalUrl,
+      success,
+      service
+    };
 
-      // Update UI kartu
-      if (itemEl) {
-        const statusTag = itemEl.querySelector(".bulk-status-tag");
-        const serviceTag = itemEl.querySelector(".bulk-service-tag");
-        const resEl = itemEl.querySelector(".bulk-item-res");
-        const actEl = itemEl.querySelector(".bulk-item-actions");
-        const openBtn = itemEl.querySelector(`#bulk-open-${idx}`);
-        const copyBtn = itemEl.querySelector(`#bulk-copy-${idx}`);
+    // Update UI kartu secara instan
+    if (itemEl) {
+      const actEl = itemEl.querySelector(`#bulk-act-${idx}`);
+      const openBtn = itemEl.querySelector(`#bulk-open-${idx}`);
+      const copyBtn = itemEl.querySelector(`#bulk-copy-${idx}`);
+      const serviceTag = itemEl.querySelector(".bulk-service-tag");
 
-        if (success) {
+      if (success) {
+        if (statusTag) {
           statusTag.className = "bulk-status-tag ok";
           statusTag.textContent = "Sukses";
-          serviceTag.textContent = service;
-          resEl.textContent = finalUrl;
-          actEl.classList.remove("hidden");
-          if (openBtn) openBtn.onclick = () => window.open(finalUrl, "_blank");
-          if (copyBtn) {
-            copyBtn.onclick = () => {
-              navigator.clipboard.writeText(finalUrl).then(() => {
-                copyBtn.textContent = "Copied!";
-                setTimeout(() => { copyBtn.textContent = "Copy"; }, 1500);
-              });
-            };
-          }
-        } else {
+        }
+        if (serviceTag) serviceTag.textContent = service;
+        if (resEl) resEl.textContent = finalUrl;
+        if (actEl) actEl.classList.remove("hidden");
+        if (openBtn) openBtn.onclick = () => window.open(finalUrl, "_blank");
+        if (copyBtn) {
+          copyBtn.onclick = () => {
+            navigator.clipboard.writeText(finalUrl).then(() => {
+              copyBtn.textContent = "Copied!";
+              setTimeout(() => { copyBtn.textContent = "Copy"; }, 1500);
+            });
+          };
+        }
+      } else {
+        if (statusTag) {
           statusTag.className = "bulk-status-tag err";
           statusTag.textContent = "Gagal";
-          serviceTag.textContent = service;
-          resEl.textContent = finalUrl;
         }
+        if (serviceTag) serviceTag.textContent = service;
+        if (resEl) resEl.textContent = finalUrl;
       }
-
-      updateBulkProgressBar();
     }
-  }
 
-  const workers = [];
-  for (let i = 0; i < Math.min(concurrency, lines.length); i++) {
-    workers.push(worker());
+    updateBulkProgressBar();
   }
-  await Promise.all(workers);
 
   btn.disabled = false;
   if (btnText) btnText.textContent = "Bypass Semua Link ⚡";

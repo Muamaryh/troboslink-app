@@ -506,6 +506,15 @@ body {
   background: var(--accent-yellow);
   color: #000;
 }
+.bulk-status-tag.processing {
+  background: #93c5fd;
+  color: #000;
+  animation: pulseTag 1.5s infinite alternate;
+}
+@keyframes pulseTag {
+  0% { opacity: 0.8; transform: scale(0.98); }
+  100% { opacity: 1; transform: scale(1.02); }
+}
 .bulk-service-tag {
   font-size: 0.72rem;
   font-weight: 800;
