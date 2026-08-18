@@ -13,14 +13,31 @@ const { proxySubtitle, searchMetadata, searchShows } = require('./services/subti
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Security Hardening
+app.disable('x-powered-by');
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+
+  // Anti-Bot Scraper Filter for API routes
+  if (req.path.startsWith('/api/')) {
+    const ua = (req.headers['user-agent'] || '').toLowerCase();
+    const blockedBots = ['python-requests', 'aiohttp', 'curl/', 'wget/', 'scrapy', 'postmanruntime'];
+    if (blockedBots.some(bot => ua.includes(bot))) {
+      return res.status(403).json({ error: 'Access Denied: Bot requests are blocked.' });
+    }
+  }
+  next();
+});
+
 // Middleware
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'HEAD', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Range', 'Authorization']
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Serve static frontend
 app.use(express.static(path.join(__dirname, 'public')));

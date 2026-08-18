@@ -144,7 +144,7 @@ function extractFromHtml(html, currentUrl) {
  * Resolver lanjutan untuk shortlink kompleks / ber-proteksi (AdLinkFly, ShrinkMe, Turnstile, dll)
  */
 async function resolveViaAdvancedEngine(targetUrl, logs) {
-  logs.push('Calling advanced bypass engine...');
+  logs.push('Menjalankan engine enkripsi & pemecah proteksi...');
   try {
     const resp = await axios.post('https://linkspide.fly.dev/api/organic', {
       url: targetUrl
@@ -157,15 +157,11 @@ async function resolveViaAdvancedEngine(targetUrl, logs) {
     });
 
     if (resp.data && resp.data.success && resp.data.resolved) {
-      if (Array.isArray(resp.data.logs)) {
-        resp.data.logs.forEach(l => logs.push(l));
-      } else {
-        logs.push(`Advanced engine OK -> ${resp.data.resolved}`);
-      }
+      logs.push('Proteksi shortlink berhasil dilewati.');
       return resp.data.resolved;
     }
   } catch (err) {
-    logs.push(`Advanced engine fallback error: ${err.message}`);
+    logs.push('Mencoba metode perutean alternatif...');
   }
   return null;
 }
@@ -175,15 +171,16 @@ async function resolveViaAdvancedEngine(targetUrl, logs) {
  */
 async function extractMediaFireDirect(mediafireUrl, logs) {
   try {
-    logs.push('Scraping MediaFire direct download link...');
+    logs.push('Mengekstrak direct download link...');
     const res = await axios.get(mediafireUrl, {
       headers: { 'User-Agent': USER_AGENT },
-      timeout: 10000
+      timeout: 10000,
+      maxContentLength: 2 * 1024 * 1024
     });
     const $ = cheerio.load(res.data);
     const directLink = $('#downloadButton').attr('href') || $('a[aria-label="Download file"]').attr('href');
     if (directLink && directLink.startsWith('http')) {
-      logs.push(`MediaFire direct link found: ${directLink}`);
+      logs.push(`Direct file berhasil ditemukan.`);
       return directLink;
     }
   } catch {}
@@ -204,14 +201,14 @@ async function resolveBypass(targetUrl) {
   const hops = [currentUrl];
   const serviceName = detectService(currentUrl);
 
-  logs.push(`Service Detected: ${serviceName}`);
-  logs.push(`Initial URL: ${currentUrl}`);
+  logs.push(`Layanan terdeteksi: ${serviceName}`);
+  logs.push(`Memeriksa struktur tautan...`);
 
   // Handler instan: PixelDrain
   const pdMatch = currentUrl.match(/pixeldrain\.com\/u\/([a-zA-Z0-9_-]+)/i);
   if (pdMatch) {
     const directPd = `https://pixeldrain.com/api/file/${pdMatch[1]}`;
-    logs.push(`PixelDrain direct converted: ${directPd}`);
+    logs.push(`Mengonversi ke direct binary link...`);
     return {
       success: true,
       originalUrl: targetUrl,
@@ -227,7 +224,7 @@ async function resolveBypass(targetUrl) {
   const gdMatch = currentUrl.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([a-zA-Z0-9_-]+)/i);
   if (gdMatch) {
     const directGd = `https://drive.google.com/uc?export=download&id=${gdMatch[1]}`;
-    logs.push(`Google Drive direct converted: ${directGd}`);
+    logs.push(`Mengonversi ke direct export download...`);
     return {
       success: true,
       originalUrl: targetUrl,
@@ -241,7 +238,7 @@ async function resolveBypass(targetUrl) {
 
   // Handler instan: MediaFire direct file
   if (currentUrl.includes('mediafire.com/file/')) {
-    logs.push('MediaFire file page detected, extracting direct download link...');
+    logs.push('Menganalisis halaman unduhan...');
     const directMf = await extractMediaFireDirect(currentUrl, logs);
     if (directMf && directMf !== currentUrl) {
       hops.push(directMf);
@@ -259,7 +256,7 @@ async function resolveBypass(targetUrl) {
 
   // Jika terdeteksi shortlink berproteksi khusus (ShrinkMe, Linkvertise, Droplink, dll), langsung gunakan solver engine
   if (isProtectedDomain(currentUrl)) {
-    logs.push(`Protected service detected (${serviceName}), using multi-strategy solver...`);
+    logs.push(`Menembus proteksi token & countdown...`);
     const advancedResolved = await resolveViaAdvancedEngine(currentUrl, logs);
     if (advancedResolved && advancedResolved !== currentUrl) {
       currentUrl = advancedResolved;
@@ -288,13 +285,13 @@ async function resolveBypass(targetUrl) {
 
   // Tahap Standar: Tracking Redirect HTTP & Parsing HTML
   let maxHops = 8;
-  logs.push('Executing HTTP redirect tracer...');
+  logs.push('Melacak rantai redirect...');
 
   while (maxHops > 0) {
     // 1. Cek parameter query
     const queryExtract = extractFromQueryParams(currentUrl);
     if (queryExtract && queryExtract !== currentUrl) {
-      logs.push(`Extracted from query param -> ${queryExtract}`);
+      logs.push(`Mengekstrak parameter tujuan...`);
       currentUrl = queryExtract;
       hops.push(currentUrl);
       continue;
@@ -319,7 +316,7 @@ async function resolveBypass(targetUrl) {
       if (typeof resp.data === 'string') {
         const htmlExtract = extractFromHtml(resp.data, nextUrl);
         if (htmlExtract && htmlExtract !== nextUrl && htmlExtract !== currentUrl) {
-          logs.push(`Extracted from HTML content -> ${htmlExtract}`);
+          logs.push(`Membaca meta redirect halaman...`);
           currentUrl = htmlExtract;
           hops.push(currentUrl);
           maxHops--;
@@ -328,7 +325,7 @@ async function resolveBypass(targetUrl) {
       }
 
       if (nextUrl && nextUrl !== currentUrl) {
-        logs.push(`Redirected -> ${nextUrl}`);
+        logs.push(`Meneruskan rute...`);
         currentUrl = nextUrl;
         hops.push(currentUrl);
         maxHops--;
@@ -337,7 +334,6 @@ async function resolveBypass(targetUrl) {
 
       break;
     } catch (err) {
-      logs.push(`Tracer note: ${err.message}`);
       if (err.request?.res?.responseUrl) {
         currentUrl = err.request.res.responseUrl;
         hops.push(currentUrl);

@@ -4,12 +4,20 @@ exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Content-Type': 'application/json'
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json',
+    'X-Content-Type-Options': 'nosniff'
   };
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
+  }
+
+  // Anti-Bot Filter
+  const userAgent = (event.headers['user-agent'] || '').toLowerCase();
+  const blockedBots = ['python-requests', 'aiohttp', 'curl/', 'wget/', 'scrapy', 'postmanruntime'];
+  if (blockedBots.some(bot => userAgent.includes(bot))) {
+    return { statusCode: 403, headers, body: JSON.stringify({ valid: false, error: 'Access Denied' }) };
   }
 
   try {
@@ -28,7 +36,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ valid: false, error: err.message })
+      body: JSON.stringify({ valid: false, error: 'Internal Error' })
     };
   }
 };
