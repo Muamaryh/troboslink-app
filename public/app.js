@@ -411,9 +411,28 @@ async function handleStream() {
       return;
     }
 
-    const proxyStreamUrl = `${API_BASE}/api/stream/stream?url=${encodeURIComponent(url)}`;
-    const isHls = url.includes(".m3u8");
-    setStreamUrl(proxyStreamUrl, isHls);
+    let streamTarget = url;
+
+    // 1. Direct conversion untuk PixelDrain (mendukung CORS native & fast CDN)
+    const pdMatch = url.match(/pixeldrain\.com\/u\/([a-zA-Z0-9_-]+)/i);
+    if (pdMatch) {
+      streamTarget = `https://pixeldrain.com/api/file/${pdMatch[1]}`;
+    }
+
+    // 2. Direct conversion untuk Google Drive
+    const gdMatch = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([a-zA-Z0-9_-]+)/i);
+    if (gdMatch) {
+      streamTarget = `https://drive.google.com/uc?export=download&id=${gdMatch[1]}`;
+    }
+
+    // 3. Fallback ke proxy jika bukan direct atau jika perlu proxy stream
+    if (!pdMatch && !gdMatch && !/\.(mp4|webm|ogg|mkv|m3u8)($|\?)/i.test(url)) {
+      const streamProxyBase = API_BASE || "https://linkspide.fly.dev";
+      streamTarget = `${streamProxyBase}/api/stream/stream?url=${encodeURIComponent(url)}`;
+    }
+
+    const isHls = streamTarget.includes(".m3u8");
+    setStreamUrl(streamTarget, isHls);
 
     // Simpan ke riwayat
     streamHistory = [{ url, time: new Date().toLocaleTimeString() }, ...streamHistory.filter(h => h.url !== url)].slice(0, 10);
@@ -424,11 +443,8 @@ async function handleStream() {
     const customSub = el("subUrlInput")?.value.trim();
     if (customSub) {
       loadSubtitle();
-    } else if (url.includes("pixeldrain.com")) {
-      const pdId = url.match(/\/u\/([a-zA-Z0-9_-]+)/);
-      if (pdId) {
-        applySubtitleTrack(`${API_BASE}/api/stream/subtitle?url=${encodeURIComponent(`https://pixeldrain.com/api/file/${pdId[1]}.srt`)}`);
-      }
+    } else if (pdMatch) {
+      applySubtitleTrack(`https://pixeldrain.com/api/file/${pdMatch[1]}.srt`);
     }
   } catch (e) {
     showStreamError(e.message || "Gagal memutar video");
