@@ -5,7 +5,7 @@ const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 /**
  * Normalisasi URL video dari berbagai hoster
  */
-function normalizeVideoUrl(rawUrl) {
+async function normalizeVideoUrl(rawUrl) {
   let url = rawUrl.trim();
   if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
 
@@ -21,6 +21,17 @@ function normalizeVideoUrl(rawUrl) {
     return `https://drive.google.com/uc?export=download&id=${gd[1]}`;
   }
 
+  // MediaFire: scrape direct link jika link adalah halaman file
+  if (url.includes('mediafire.com/file/')) {
+    try {
+      const cheerio = require('cheerio');
+      const mfRes = await axios.get(url, { headers: { 'User-Agent': USER_AGENT }, timeout: 8000 });
+      const $ = cheerio.load(mfRes.data);
+      const direct = $('#downloadButton').attr('href') || $('a[aria-label="Download file"]').attr('href');
+      if (direct && direct.startsWith('http')) return direct;
+    } catch {}
+  }
+
   return url;
 }
 
@@ -33,7 +44,7 @@ async function streamVideoProxy(req, res) {
     return res.status(400).json({ error: 'Parameter url diperlukan' });
   }
 
-  const finalUrl = normalizeVideoUrl(targetUrl);
+  const finalUrl = await normalizeVideoUrl(targetUrl);
   const range = req.headers.range;
 
   const requestHeaders = {
@@ -126,7 +137,7 @@ async function checkCodec(req, res) {
     return res.status(400).json({ error: 'Parameter url diperlukan' });
   }
 
-  const finalUrl = normalizeVideoUrl(targetUrl);
+  const finalUrl = await normalizeVideoUrl(targetUrl);
 
   try {
     const head = await axios.head(finalUrl, {
