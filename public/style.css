@@ -536,6 +536,9 @@ button {
   display: grid;
   gap: 16px;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 .result-card, .logs-card {
   background: #ffffff;
@@ -544,6 +547,10 @@ button {
   box-shadow: var(--shadow-md);
   padding: 14px;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 .result-top {
   display: flex;
@@ -552,6 +559,8 @@ button {
   margin-bottom: 12px;
   gap: 8px;
   flex-wrap: wrap;
+  width: 100%;
+  min-width: 0;
 }
 .result-badge {
   display: flex;
@@ -598,8 +607,14 @@ button {
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--black);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   word-break: break-all;
   overflow-wrap: anywhere;
+  white-space: normal;
+  overflow: hidden;
   margin-bottom: 12px;
 }
 .result-tags {
@@ -640,6 +655,7 @@ button {
 .logs-body {
   max-height: 160px;
   overflow-y: auto;
+  overflow-x: hidden;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.78rem;
   font-weight: 600;
@@ -650,13 +666,27 @@ button {
   border: var(--border-thick);
   border-radius: var(--radius-sm);
   padding: 10px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   word-break: break-all;
+  overflow-wrap: anywhere;
 }
 .log-entry {
   display: flex;
   align-items: flex-start;
   gap: 6px;
   color: var(--text-muted);
+  width: 100%;
+  min-width: 0;
+}
+.log-msg {
+  flex: 1;
+  min-width: 0;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 .log-dot {
   width: 5px;
