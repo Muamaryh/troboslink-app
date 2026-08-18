@@ -684,8 +684,284 @@ function initPlayer() {
   });
 }
 
+/* =========================================================
+   BULK BYPASS LOGIC & EXPORT HANDLERS
+   ========================================================= */
+
+let currentBypassMode = 'single';
+let bulkResultsData = [];
+
+function setBypassMode(mode) {
+  currentBypassMode = mode;
+  const btnSingle = el("btnModeSingle");
+  const btnBulk = el("btnModeBulk");
+  const singleWrap = el("singleBypassWrap");
+  const bulkWrap = el("bulkBypassWrap");
+  const organicBadge = el("organicBadge");
+
+  if (mode === "single") {
+    btnSingle?.classList.add("active");
+    btnBulk?.classList.remove("active");
+    singleWrap?.classList.remove("hidden");
+    bulkWrap?.classList.add("hidden");
+    organicBadge?.classList.remove("hidden");
+  } else {
+    btnBulk?.classList.add("active");
+    btnSingle?.classList.remove("active");
+    bulkWrap?.classList.remove("hidden");
+    singleWrap?.classList.add("hidden");
+    organicBadge?.classList.add("hidden");
+    hide("status");
+    hide("progress");
+    hide("result");
+    hide("logs");
+    el("bulkInput")?.focus();
+  }
+}
+
+function updateBulkCounter() {
+  const text = el("bulkInput")?.value || "";
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+  const counter = el("bulkCounter");
+  if (counter) counter.textContent = lines.length + " Link";
+}
+
+function clearBulk() {
+  const input = el("bulkInput");
+  if (input) input.value = "";
+  updateBulkCounter();
+  hide("bulkProgress");
+  hide("bulkResultsWrap");
+  const list = el("bulkResultsList");
+  if (list) list.innerHTML = "";
+  bulkResultsData = [];
+}
+
+async function resolveBulk() {
+  const text = el("bulkInput")?.value || "";
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+
+  if (lines.length === 0) {
+    el("bulkInput")?.focus();
+    return;
+  }
+
+  const btn = el("bulkResolveBtn");
+  const btnText = el("bulkBtnText");
+  btn.disabled = true;
+  if (btnText) btnText.textContent = "Memproses Bulk...";
+
+  show("bulkProgress");
+  show("bulkResultsWrap");
+  el("bulkResultsList").innerHTML = "";
+  bulkResultsData = [];
+  el("bulkSuccessCount").textContent = "0";
+
+  const total = lines.length;
+  let finishedCount = 0;
+  let successCount = 0;
+
+  function updateBulkProgressBar() {
+    const pct = Math.round((finishedCount / total) * 100);
+    const fill = el("bulkProgressFill");
+    if (fill) fill.style.width = pct + "%";
+    const textEl = el("bulkProgressText");
+    if (textEl) textEl.textContent = `Memproses ${finishedCount} dari ${total} link...`;
+    const numEl = el("bulkProgressPercent");
+    if (numEl) numEl.textContent = pct + "%";
+  }
+
+  updateBulkProgressBar();
+
+  // Buat kartu placeholder untuk tiap link
+  const itemElements = [];
+  lines.forEach((url, idx) => {
+    const item = document.createElement("div");
+    item.className = "bulk-item";
+    item.id = `bulk-item-${idx}`;
+    item.innerHTML = `
+      <div class="bulk-item-top">
+        <div class="bulk-item-badges">
+          <span class="bulk-status-tag pending">Menunggu...</span>
+          <span class="bulk-service-tag">${detectServiceName(url)}</span>
+        </div>
+        <div class="bulk-item-actions hidden" id="bulk-act-${idx}">
+          <button class="bulk-mini-btn" id="bulk-open-${idx}">Buka</button>
+          <button class="bulk-mini-btn" id="bulk-copy-${idx}">Copy</button>
+        </div>
+      </div>
+      <div class="bulk-item-orig">${escapeHtml(url)}</div>
+      <div class="bulk-item-res">Sedang antre...</div>
+    `;
+    el("bulkResultsList").appendChild(item);
+    itemElements.push(item);
+  });
+
+  // Antrean paralel (2 thread simultan)
+  const concurrency = 2;
+  let currentIndex = 0;
+
+  async function worker() {
+    while (currentIndex < lines.length) {
+      const idx = currentIndex++;
+      const rawUrl = lines[idx];
+      let finalUrl = null;
+      let success = false;
+      let service = detectServiceName(rawUrl);
+
+      const itemEl = itemElements[idx];
+      if (itemEl) {
+        itemEl.querySelector(".bulk-status-tag").textContent = "Memproses...";
+        itemEl.querySelector(".bulk-item-res").textContent = "Membuka proteksi shortlink...";
+      }
+
+      try {
+        let norm = normalizeUrl(rawUrl);
+        const pd = norm.match(/pixeldrain\.com\/u\/([a-zA-Z0-9_-]+)/i);
+        const gd = norm.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([a-zA-Z0-9_-]+)/i);
+
+        if (pd) {
+          finalUrl = `https://pixeldrain.com/api/file/${pd[1]}`;
+          service = "PixelDrain";
+          success = true;
+        } else if (gd) {
+          finalUrl = `https://drive.google.com/uc?export=download&id=${gd[1]}`;
+          service = "Google Drive";
+          success = true;
+        } else {
+          const res = await fetch(`${API_BASE}/api/organic`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: norm })
+          });
+          const data = await res.json();
+          if (data.success && data.resolved) {
+            finalUrl = data.resolved;
+            service = data.service || service;
+            success = true;
+          } else {
+            finalUrl = data.error || "Gagal membuka link";
+            success = false;
+          }
+        }
+      } catch (err) {
+        finalUrl = err.message || "Network Error";
+        success = false;
+      }
+
+      finishedCount++;
+      if (success) successCount++;
+      el("bulkSuccessCount").textContent = successCount;
+
+      bulkResultsData[idx] = {
+        original: rawUrl,
+        resolved: finalUrl,
+        success,
+        service
+      };
+
+      // Update UI kartu
+      if (itemEl) {
+        const statusTag = itemEl.querySelector(".bulk-status-tag");
+        const serviceTag = itemEl.querySelector(".bulk-service-tag");
+        const resEl = itemEl.querySelector(".bulk-item-res");
+        const actEl = itemEl.querySelector(".bulk-item-actions");
+        const openBtn = itemEl.querySelector(`#bulk-open-${idx}`);
+        const copyBtn = itemEl.querySelector(`#bulk-copy-${idx}`);
+
+        if (success) {
+          statusTag.className = "bulk-status-tag ok";
+          statusTag.textContent = "Sukses";
+          serviceTag.textContent = service;
+          resEl.textContent = finalUrl;
+          actEl.classList.remove("hidden");
+          if (openBtn) openBtn.onclick = () => window.open(finalUrl, "_blank");
+          if (copyBtn) {
+            copyBtn.onclick = () => {
+              navigator.clipboard.writeText(finalUrl).then(() => {
+                copyBtn.textContent = "Copied!";
+                setTimeout(() => { copyBtn.textContent = "Copy"; }, 1500);
+              });
+            };
+          }
+        } else {
+          statusTag.className = "bulk-status-tag err";
+          statusTag.textContent = "Gagal";
+          serviceTag.textContent = service;
+          resEl.textContent = finalUrl;
+        }
+      }
+
+      updateBulkProgressBar();
+    }
+  }
+
+  const workers = [];
+  for (let i = 0; i < Math.min(concurrency, lines.length); i++) {
+    workers.push(worker());
+  }
+  await Promise.all(workers);
+
+  btn.disabled = false;
+  if (btnText) btnText.textContent = "Bypass Semua Link ⚡";
+  const textEl = el("bulkProgressText");
+  if (textEl) textEl.textContent = `Selesai! ${successCount} dari ${total} link berhasil dibuka.`;
+}
+
+function detectServiceName(url) {
+  const u = (url || "").toLowerCase();
+  if (u.includes("shrinkme") || u.includes("shrinke")) return "ShrinkMe";
+  if (u.includes("ouo.io") || u.includes("ouo.press") || u.includes("oii.la") || u.includes("oii.io")) return "Ouo.io";
+  if (u.includes("linkvertise") || u.includes("link-to.net")) return "Linkvertise";
+  if (u.includes("pixeldrain")) return "PixelDrain";
+  if (u.includes("mediafire")) return "MediaFire";
+  if (u.includes("drive.google")) return "Google Drive";
+  if (u.includes("droplink")) return "DropLink";
+  if (u.includes("adfly") || u.includes("adf.ly")) return "Adfly";
+  if (u.includes("cuty") || u.includes("cutty")) return "Cuty.io";
+  return "Shortlink";
+}
+
+function copyAllBulkResults() {
+  const successUrls = bulkResultsData
+    .filter(r => r && r.success && r.resolved)
+    .map(r => r.resolved);
+
+  if (successUrls.length === 0) {
+    alert("Belum ada link yang berhasil di-bypass.");
+    return;
+  }
+
+  navigator.clipboard.writeText(successUrls.join("\n")).then(() => {
+    const btnText = el("copyAllText");
+    const orig = btnText ? btnText.textContent : "Copy Semua Link";
+    if (btnText) btnText.textContent = "Tersalin (" + successUrls.length + " Link)!";
+    setTimeout(() => { if (btnText) btnText.textContent = orig; }, 2000);
+  });
+}
+
+function downloadBulkResults() {
+  const rows = bulkResultsData
+    .filter(Boolean)
+    .map(r => `${r.original} -> ${r.success ? r.resolved : '[GAGAL]'}`);
+
+  if (rows.length === 0) {
+    alert("Belum ada hasil bypass.");
+    return;
+  }
+
+  const content = `# TrobosLink Bulk Bypass Results\n# Waktu: ${new Date().toLocaleString()}\n\n` + rows.join("\n");
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `troboslink_results_${Date.now()}.txt`;
+  a.click();
+}
+
 // Initial load
 document.addEventListener("DOMContentLoaded", () => {
   initPlayer();
   renderHistory();
+  el("bulkInput")?.addEventListener("input", updateBulkCounter);
 });
+
