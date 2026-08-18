@@ -230,7 +230,7 @@ function showSubSearchStatus(msg, type = "ok", loading = false) {
   show("subSearchStatus");
 }
 
-function applySubtitleTrack(subUrl) {
+function applySubtitleTrack(subUrl, isExplicit = false) {
   const video = el("streamVideo");
   if (!video) return;
   const existing = video.querySelectorAll("track");
@@ -253,7 +253,11 @@ function applySubtitleTrack(subUrl) {
     el("subToggleBtn").textContent = "CC ON";
   };
   track.onerror = () => {
-    showSubStatus("Gagal memuat subtitle track", "error");
+    if (isExplicit) {
+      showSubStatus("Gagal memuat file subtitle", "error");
+    } else {
+      hideSubStatus();
+    }
   };
 
   video.appendChild(track);
@@ -268,7 +272,7 @@ async function loadSubtitle() {
   if (!subUrl) return;
   showSubStatus("Memuat subtitle...", "ok");
   try {
-    applySubtitleTrack(`${API_BASE}/api/stream/subtitle?url=${encodeURIComponent(subUrl)}`);
+    applySubtitleTrack(`${API_BASE}/api/stream/subtitle?url=${encodeURIComponent(subUrl)}`, true);
   } catch (e) {
     showSubStatus("Gagal: " + e.message, "error");
   }
@@ -483,7 +487,7 @@ async function searchByTitle() {
         // Auto pasang subtitle pertama
         const first = subs[0];
         if (first.url) {
-          applySubtitleTrack(`${API_BASE}/api/stream/subtitle?url=${encodeURIComponent(first.url)}`);
+          applySubtitleTrack(`${API_BASE}/api/stream/subtitle?url=${encodeURIComponent(first.url)}`, true);
         }
       } else {
         showSubSearchStatus("Tidak ditemukan subtitle untuk bahasa ini", "error", false);
