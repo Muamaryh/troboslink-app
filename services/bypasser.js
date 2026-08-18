@@ -8,7 +8,7 @@ const PROTECTED_SERVICES = [
   'shrinkme', 'shrinke', 'linkvertise', 'link-to.net', 'up-to-down.net', 'direct-link.net', 'link-target.net',
   'ouo.io', 'ouo.press', 'oii.la', 'oii.io',
   'droplink', 'adfly', 'adf.ly', 'adshrink', 'tinyurl.is', 
-  'exe.io', 'gplinks', 'cuty.io', 'traffic1s', 'realslink', 'safelink',
+  'exe.io', 'gplinks', 'cuty.io', 'cuty.me', 'cutty.com', 'cuttty.com', 'traffic1s', 'realslink', 'safelink',
   'shorturl', 'sfl.gl', 'sh.st', 'bit.ly', 'cutt.ly', 'is.gd', 'v.gd', 'gdflix'
 ];
 
@@ -23,6 +23,7 @@ function detectService(rawUrl) {
     if (host.includes('shrinkme') || host.includes('shrinke.me')) return 'ShrinkMe';
     if (host.includes('ouo.io') || host.includes('ouo.press') || host.includes('oii.la') || host.includes('oii.io')) return 'Ouo.io';
     if (host.includes('linkvertise') || host.includes('link-to.net') || host.includes('direct-link.net')) return 'Linkvertise';
+    if (host.includes('cuty') || host.includes('cutty') || host.includes('cuttty')) return 'Cuty.io';
     if (host.includes('pixeldrain.com')) return 'PixelDrain';
     if (host.includes('mediafire.com')) return 'MediaFire';
     if (host.includes('drive.google.com') || host.includes('docs.google.com')) return 'Google Drive';
@@ -33,7 +34,6 @@ function detectService(rawUrl) {
     if (host.includes('adfly') || host.includes('adf.ly')) return 'Adfly';
     if (host.includes('gplinks')) return 'GPLinks';
     if (host.includes('exe.io')) return 'Exe.io';
-    if (host.includes('cuty.io')) return 'Cuty.io';
     if (host.includes('traffic1s')) return 'Traffic1s';
     if (host.includes('bit.ly')) return 'Bitly';
     if (host.includes('tinyurl')) return 'TinyURL';
