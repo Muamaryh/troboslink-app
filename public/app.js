@@ -797,9 +797,10 @@ async function resolveBulk() {
     itemElements.push(item);
   });
 
-  // Antrean berurutan (1 per 1) agar stabil dan rapi
-  const concurrency = 1;
+  // Concurrency paralel (hingga 4 link bersamaan agar cepat) & Cache duplikat
+  const concurrency = 4;
   let currentIndex = 0;
+  const linkCache = {};
 
   async function worker() {
     while (currentIndex < lines.length) {
@@ -817,32 +818,42 @@ async function resolveBulk() {
 
       try {
         let norm = normalizeUrl(rawUrl);
-        const pd = norm.match(/pixeldrain\.com\/u\/([a-zA-Z0-9_-]+)/i);
-        const gd = norm.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([a-zA-Z0-9_-]+)/i);
 
-        if (pd) {
-          finalUrl = `https://pixeldrain.com/api/file/${pd[1]}`;
-          service = "PixelDrain";
-          success = true;
-        } else if (gd) {
-          finalUrl = `https://drive.google.com/uc?export=download&id=${gd[1]}`;
-          service = "Google Drive";
-          success = true;
+        // Cek jika link ini duplikat yang sudah pernah di-solve dalam batch yang sama
+        if (linkCache[norm]) {
+          finalUrl = linkCache[norm].finalUrl;
+          service = linkCache[norm].service;
+          success = linkCache[norm].success;
         } else {
-          const res = await fetch(`${API_BASE}/api/organic`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: norm })
-          });
-          const data = await res.json();
-          if (data.success && data.resolved) {
-            finalUrl = data.resolved;
-            service = data.service || service;
+          const pd = norm.match(/pixeldrain\.com\/u\/([a-zA-Z0-9_-]+)/i);
+          const gd = norm.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([a-zA-Z0-9_-]+)/i);
+
+          if (pd) {
+            finalUrl = `https://pixeldrain.com/api/file/${pd[1]}`;
+            service = "PixelDrain";
+            success = true;
+          } else if (gd) {
+            finalUrl = `https://drive.google.com/uc?export=download&id=${gd[1]}`;
+            service = "Google Drive";
             success = true;
           } else {
-            finalUrl = data.error || "Gagal membuka link";
-            success = false;
+            const res = await fetch(`${API_BASE}/api/organic`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ url: norm })
+            });
+            const data = await res.json();
+            if (data.success && data.resolved) {
+              finalUrl = data.resolved;
+              service = data.service || service;
+              success = true;
+            } else {
+              finalUrl = data.error || "Gagal membuka link";
+              success = false;
+            }
           }
+
+          linkCache[norm] = { finalUrl, service, success };
         }
       } catch (err) {
         finalUrl = err.message || "Network Error";
