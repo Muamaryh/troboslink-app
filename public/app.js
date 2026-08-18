@@ -797,8 +797,8 @@ async function resolveBulk() {
     itemElements.push(item);
   });
 
-  // Antrean paralel (2 thread simultan)
-  const concurrency = 2;
+  // Antrean berurutan (1 per 1) agar stabil dan rapi
+  const concurrency = 1;
   let currentIndex = 0;
 
   async function worker() {
