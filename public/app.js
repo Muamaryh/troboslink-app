@@ -335,7 +335,12 @@ function setStreamUrl(url, isHls = false) {
 
   hideStreamError();
   video.onerror = () => {
-    showStreamError("Tidak dapat memuat video dari link ini. Pastikan link adalah link file video langsung (seperti PixelDrain, Google Drive, Catbox, atau Direct .MP4).");
+    if (video.error) {
+      showStreamError("Tidak dapat memuat video dari link ini. Pastikan link adalah link file video langsung (seperti PixelDrain, Google Drive, Catbox, atau Direct .MP4).");
+    }
+  };
+  video.oncanplay = () => {
+    hideStreamError();
   };
   video.onloadeddata = () => {
     hideStreamError();
