@@ -233,6 +233,24 @@ async function resolveBypass(targetUrl) {
     };
   }
 
+  // Handler instan: MediaFire direct file
+  if (currentUrl.includes('mediafire.com/file/')) {
+    logs.push('MediaFire file page detected, extracting direct download link...');
+    const directMf = await extractMediaFireDirect(currentUrl, logs);
+    if (directMf && directMf !== currentUrl) {
+      hops.push(directMf);
+      return {
+        success: true,
+        originalUrl: targetUrl,
+        resolved: directMf,
+        service: 'MediaFire',
+        hops: [...new Set(hops)],
+        logs,
+        elapsedMs: Date.now() - startTime
+      };
+    }
+  }
+
   // Jika terdeteksi shortlink berproteksi khusus (ShrinkMe, Linkvertise, Droplink, dll), langsung gunakan solver engine
   if (isProtectedDomain(currentUrl)) {
     logs.push(`Protected service detected (${serviceName}), using multi-strategy solver...`);
@@ -285,6 +303,7 @@ async function resolveBypass(targetUrl) {
         },
         maxRedirects: 5,
         timeout: 12000,
+        maxContentLength: 2 * 1024 * 1024,
         validateStatus: (status) => status < 400 || (status >= 300 && status < 400)
       });
 
