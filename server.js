@@ -233,6 +233,22 @@ app.get(['/api/qris', '/api/donate'], (req, res) => {
   });
 });
 
+// 9. TeraBox Folder & File Resolver
+const { resolveTeraBox } = require('./services/terabox');
+app.post('/api/terabox', async (req, res) => {
+  const { url } = req.body;
+  if (!url) {
+    return res.status(400).json({ success: false, error: 'URL TeraBox diperlukan' });
+  }
+
+  try {
+    const data = await resolveTeraBox(url);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Fallback ke index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
