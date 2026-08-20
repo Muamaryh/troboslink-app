@@ -15,9 +15,27 @@ exports.handler = async (event) => {
 
   // Anti-Bot Filter
   const userAgent = (event.headers['user-agent'] || '').toLowerCase();
-  const blockedBots = ['python-requests', 'aiohttp', 'curl/', 'wget/', 'scrapy', 'postmanruntime'];
-  if (blockedBots.some(bot => userAgent.includes(bot))) {
-    return { statusCode: 403, headers, body: JSON.stringify({ valid: false, error: 'Access Denied' }) };
+  const blockedBots = [
+    'python', 'requests', 'aiohttp', 'curl/', 'wget/', 'scrapy', 'postmanruntime',
+    'insomnia', 'httpie', 'axios', 'go-http-client', 'urllib', 'undici', 'headlesschrome',
+    'puppeteer', 'playwright', 'selenium'
+  ];
+  if (!userAgent || blockedBots.some(bot => userAgent.includes(bot))) {
+    return {
+      statusCode: 403,
+      headers,
+      body: JSON.stringify({
+        status: 'blocked',
+        code: 403,
+        alert: '🚨 Ups, terdeteksi aktivitas bot / scraping!',
+        message: 'Daripada ngoprek mending tf buat next update 😉',
+        qris: {
+          merchant_name: 'MARSZEN DIGITAL PREMIUM',
+          nmid: 'ID1024325433604',
+          image_url: '/qris.jpg'
+        }
+      })
+    };
   }
 
   try {

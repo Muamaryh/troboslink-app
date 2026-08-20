@@ -428,8 +428,54 @@
     </footer>
   </div>
 
+  <!-- Modal Anti-Inspect / Ngoprek Easter Egg -->
+  <div id="antiInspectModal" class="anti-inspect-overlay" role="dialog" aria-modal="true">
+    <div class="anti-inspect-card">
+      <div class="anti-inspect-header">
+        <div class="anti-inspect-badge">
+          <span class="badge-dot pulse"></span>
+          SECURITY ALERT
+        </div>
+        <button class="anti-inspect-close" onclick="closeAntiInspectModal()" title="Tutup">&times;</button>
+      </div>
+
+      <div class="anti-inspect-body">
+        <div class="anti-inspect-emoji">🚨 😉 ☕</div>
+        <h2 class="anti-inspect-title">Eits, Mau Ngapain Bro?</h2>
+        <div class="anti-inspect-tagline">
+          &ldquo;Daripada ngoprek mending tf buat next update&rdquo;
+        </div>
+        <p class="anti-inspect-reason-text">
+          Aktivitas terdeteksi: <span id="antiInspectReason">Inspect / DevTools</span>
+        </p>
+
+        <div class="qris-box">
+          <div class="qris-img-wrap">
+            <img src="/qris.jpg" alt="QRIS Donasi MARSZEN DIGITAL PREMIUM" class="qris-img" />
+          </div>
+          <div class="qris-info">
+            <span class="qris-name">MARSZEN DIGITAL PREMIUM</span>
+            <span class="qris-nmid">NMID: ID1024325433604</span>
+            <span class="qris-hint">Scan via GoPay, OVO, Dana, ShopeePay, BCA, Mandiri, Bank Lain</span>
+          </div>
+        </div>
+
+        <div class="anti-inspect-actions">
+          <button class="btn-copy-qris" onclick="downloadQrisImage()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download Gambar QRIS
+          </button>
+          <button class="btn-forgive" onclick="closeAntiInspectModal()">
+            Ampun Bang, Mau Support Aja 🙏
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="/config.js?v=2.3"></script>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
   <script src="/app.js?v=2.3"></script>
+  <script src="/security.js?v=1.0"></script>
 </body>
 </html>

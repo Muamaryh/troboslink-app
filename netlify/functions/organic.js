@@ -50,15 +50,42 @@ exports.handler = async (event) => {
 
   // 1. Anti-Bot Filter (Block automated raw scraping libraries)
   const userAgent = (event.headers['user-agent'] || '').toLowerCase();
-  const blockedBots = ['python-requests', 'aiohttp', 'curl/', 'wget/', 'scrapy', 'postmanruntime', 'httpclient'];
-  if (blockedBots.some(bot => userAgent.includes(bot))) {
-    return { statusCode: 403, headers, body: JSON.stringify({ success: false, error: 'Access Denied: Automated bot requests are blocked.' }) };
+  const blockedBots = [
+    'python', 'requests', 'aiohttp', 'curl/', 'wget/', 'scrapy', 'postmanruntime',
+    'insomnia', 'httpie', 'axios', 'go-http-client', 'urllib', 'undici', 'headlesschrome',
+    'puppeteer', 'playwright', 'selenium', 'httpclient'
+  ];
+  if (!userAgent || blockedBots.some(bot => userAgent.includes(bot))) {
+    return {
+      statusCode: 403,
+      headers,
+      body: JSON.stringify({
+        status: 'blocked',
+        code: 403,
+        alert: '🚨 Ups, terdeteksi bot scraper / ngoprek!',
+        message: 'Daripada ngoprek mending tf buat next update 😉',
+        qris: {
+          merchant_name: 'MARSZEN DIGITAL PREMIUM',
+          nmid: 'ID1024325433604',
+          image_url: '/qris.jpg'
+        }
+      })
+    };
   }
 
   // 2. IP Rate Limiting
   const clientIp = event.headers['x-forwarded-for']?.split(',')[0]?.trim() || event.headers['client-ip'] || 'unknown';
   if (clientIp !== 'unknown' && isRateLimited(clientIp)) {
-    return { statusCode: 429, headers, body: JSON.stringify({ success: false, error: 'Terlalu banyak permintaan. Silakan tunggu 1 menit.' }) };
+    return {
+      statusCode: 429,
+      headers,
+      body: JSON.stringify({
+        status: 'rate_limited',
+        code: 429,
+        message: 'Terlalu banyak permintaan! Daripada ngoprek mending tf buat next update 😉',
+        qris_url: '/qris.jpg'
+      })
+    };
   }
 
   try {
