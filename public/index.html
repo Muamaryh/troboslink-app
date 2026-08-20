@@ -299,6 +299,15 @@
           <div class="archive-list" id="archiveList"></div>
         </div>
 
+        <div id="teraStreamFiles" class="archive-files hidden">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+            <span class="terabox-badge">📦 TeraBox Playlist</span>
+            <span style="font-size:0.75rem; font-weight:800; color:var(--text-muted);">Klik video untuk memutar</span>
+          </div>
+          <h3 id="teraStreamTitle" style="font-size:0.95rem; margin-bottom:8px;">Pilih Video untuk Diputar</h3>
+          <div class="archive-list" id="teraStreamList"></div>
+        </div>
+
         <div id="movieInfo" class="movie-info hidden">
           <span class="movie-title" id="movieTitle"></span>
           <span class="imdb-badge hidden" id="imdbBadge"></span>
@@ -312,6 +321,7 @@
         <div id="playerWrapper" class="player-wrapper hidden">
           <div class="player-box" id="playerBox">
             <video id="streamVideo" preload="metadata" playsinline class="video-player"></video>
+            <iframe id="streamIframe" class="stream-embed-frame hidden" allowfullscreen allow="autoplay; fullscreen; picture-in-picture" frameborder="0"></iframe>
             <div class="player-center-overlay" id="centerOverlay">
               <button class="big-play-btn" id="bigPlayBtn" aria-label="Play">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
