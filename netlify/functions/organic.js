@@ -96,14 +96,21 @@ exports.handler = async (event) => {
     }
 
     const result = await resolveBypass(body.url);
-    sendTelegramLog({ event, originalUrl: body.url, result }).catch(() => {});
+    try {
+      await sendTelegramLog({ event, originalUrl: body.url, result });
+    } catch {}
+
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify(result)
     };
   } catch (err) {
-    sendTelegramLog({ event, originalUrl: (typeof event.body === 'string' ? JSON.parse(event.body || '{}').url : event.body?.url) || 'Unknown', error: err.message }).catch(() => {});
+    try {
+      const origUrl = (typeof event.body === 'string' ? JSON.parse(event.body || '{}').url : event.body?.url) || 'Unknown';
+      await sendTelegramLog({ event, originalUrl: origUrl, error: err.message });
+    } catch {}
+
     return {
       statusCode: 500,
       headers,
