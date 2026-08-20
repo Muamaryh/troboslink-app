@@ -9,6 +9,7 @@ const { detectService, resolveBypass } = require('./services/bypasser');
 const { streamVideoProxy, checkCodec } = require('./services/streamer');
 const { handleArchive } = require('./services/archive');
 const { proxySubtitle, searchMetadata, searchShows } = require('./services/subtitle');
+const { sendTelegramLog } = require('./services/telegram');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -175,12 +176,15 @@ app.post(['/api/organic', '/api/bypass'], async (req, res) => {
   try {
     const result = await resolveBypass(url);
     res.json(result);
+    // Kirim notifikasi Telegram secara asynchronous di background
+    sendTelegramLog({ req, originalUrl: url, result }).catch(() => {});
   } catch (error) {
     console.error('Bypass error:', error.message);
     res.status(500).json({
       success: false,
       error: error.message || 'Gagal memproses bypass URL'
     });
+    sendTelegramLog({ req, originalUrl: url, error: error.message }).catch(() => {});
   }
 });
 
