@@ -17,10 +17,6 @@
   to = "/.netlify/functions/organic"
   status = 200
 
-[[redirects]]
-  from = "/api/drama/*"
-  to = "/.netlify/functions/drama"
-  status = 200
 
 [[redirects]]
   from = "/*"
