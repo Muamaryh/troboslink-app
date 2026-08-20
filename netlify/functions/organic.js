@@ -1,5 +1,4 @@
 const { resolveBypass } = require('../../services/bypasser');
-const { sendTelegramLog } = require('../../services/telegram');
 
 // Rate limiting in memory (per IP window)
 const rateLimitMap = new Map();
@@ -96,21 +95,12 @@ exports.handler = async (event) => {
     }
 
     const result = await resolveBypass(body.url);
-    try {
-      await sendTelegramLog({ event, originalUrl: body.url, result });
-    } catch {}
-
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify(result)
     };
   } catch (err) {
-    try {
-      const origUrl = (typeof event.body === 'string' ? JSON.parse(event.body || '{}').url : event.body?.url) || 'Unknown';
-      await sendTelegramLog({ event, originalUrl: origUrl, error: err.message });
-    } catch {}
-
     return {
       statusCode: 500,
       headers,
