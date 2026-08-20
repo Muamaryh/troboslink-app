@@ -104,10 +104,10 @@ app.use((req, res, next) => {
 
     // 2. Cek Automated Scraping Tools / Bot User-Agents
     const blockedBots = [
-      'python', 'requests', 'aiohttp', 'curl/', 'wget/', 'scrapy', 'postmanruntime',
-      'insomnia', 'httpie', 'axios', 'go-http-client', 'urllib', 'undici', 'java/',
-      'apache-httpclient', 'okhttp', 'libwww-perl', 'headlesschrome', 'puppeteer',
-      'playwright', 'selenium', 'phantomjs', 'restsharp', 'colly', 'guzzle', 'node-fetch'
+      'python-requests', 'aiohttp', 'curl/', 'wget/', 'scrapy', 'postmanruntime',
+      'insomnia/', 'httpie/', 'axios/', 'go-http-client', 'urllib/', 'undici', 'java/',
+      'apache-httpclient', 'okhttp/', 'libwww-perl', 'headlesschrome', 'puppeteer',
+      'playwright', 'selenium', 'phantomjs', 'restsharp', 'colly', 'guzzlehttp', 'node-fetch/'
     ];
 
     if (blockedBots.some(bot => ua.includes(bot))) {

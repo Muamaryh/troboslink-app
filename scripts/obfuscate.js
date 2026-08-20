@@ -5,13 +5,13 @@ const JavaScriptObfuscator = require('javascript-obfuscator');
 const rootDir = path.resolve(__dirname, '..');
 const srcBackupDir = path.join(rootDir, '.src_backup');
 
-// Obfuscator Configuration (High Security + Production Safe)
+// Obfuscator Configuration (High Security + Serverless / Node.js Safe)
 const obfuscatorOptions = {
   compact: true,
   controlFlowFlattening: true,
   controlFlowFlatteningThreshold: 0.75,
-  deadCodeInjection: true,
-  deadCodeInjectionThreshold: 0.2,
+  deadCodeInjection: false, // Nonaktifkan agar performa cepat & tidak merusak AST bundler
+  ignoreRequireImports: true, // Penting! Menjaga require('...') tetap utuh untuk Netlify / Vercel bundler
   numbersToExpressions: true,
   simplify: true,
   splitStrings: true,
@@ -20,8 +20,10 @@ const obfuscatorOptions = {
   stringArrayEncoding: ['base64', 'rc4'],
   stringArrayThreshold: 0.8,
   transformObjectKeys: true,
-  selfDefending: false, // Set false to ensure compatibility with Node.js modules & browser script tags
-  renameGlobals: false
+  selfDefending: false,
+  renameGlobals: false,
+  reservedNames: ['require', 'module', 'exports', 'process', 'global', '__dirname', '__filename'],
+  reservedStrings: ['axios', 'cheerio', 'express', 'cors', 'dotenv', 'path', 'fs', 'http', 'https', 'stream', 'url', 'crypto', 'zlib']
 };
 
 // Target Files to Obfuscate

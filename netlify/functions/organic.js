@@ -51,11 +51,11 @@ exports.handler = async (event) => {
   // 1. Anti-Bot Filter (Block automated raw scraping libraries)
   const userAgent = (event.headers['user-agent'] || '').toLowerCase();
   const blockedBots = [
-    'python', 'requests', 'aiohttp', 'curl/', 'wget/', 'scrapy', 'postmanruntime',
-    'insomnia', 'httpie', 'axios', 'go-http-client', 'urllib', 'undici', 'headlesschrome',
-    'puppeteer', 'playwright', 'selenium', 'httpclient'
+    'python-requests', 'aiohttp', 'curl/', 'wget/', 'scrapy', 'postmanruntime',
+    'insomnia/', 'httpie/', 'axios/', 'go-http-client', 'urllib/', 'undici',
+    'headlesschrome', 'puppeteer', 'playwright', 'selenium'
   ];
-  if (!userAgent || blockedBots.some(bot => userAgent.includes(bot))) {
+  if (userAgent && blockedBots.some(bot => userAgent.includes(bot))) {
     return {
       statusCode: 403,
       headers,
