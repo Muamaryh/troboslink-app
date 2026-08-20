@@ -359,10 +359,17 @@
               </div>
             </div>
           </div>
-          <div class="sub-controls">
+          <div class="sub-controls" id="nativeSubControls">
             <span class="sub-size-label">Aa</span>
             <input type="range" min="50" max="200" value="100" id="subSizeSlider" class="sub-size-slider">
             <span class="sub-size-value" id="subSizeValue">100%</span>
+          </div>
+          <div id="embedHelperBar" class="embed-helper-bar hidden">
+            <span class="embed-hint">💡 Klik tombol Play di dalam layar video untuk memutar, atau buka:</span>
+            <a id="embedDirectLink" href="#" target="_blank" rel="noopener noreferrer" class="embed-direct-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Buka Player Standalone ↗️
+            </a>
           </div>
         </div>
 
