@@ -209,18 +209,6 @@
             <div class="result-tags" id="resultTags"></div>
           </div>
 
-          <!-- TeraBox File List Card -->
-          <div id="teraboxCard" class="terabox-card hidden">
-            <div class="terabox-header">
-              <div class="terabox-title-wrap">
-                <span class="terabox-badge">📦 TeraBox Cloud Browser</span>
-                <h3 class="terabox-folder-title" id="teraboxTitle">TeraBox Folder</h3>
-              </div>
-              <span class="terabox-count" id="teraboxCount">0 File</span>
-            </div>
-            <div class="terabox-files-list" id="teraboxFilesList"></div>
-          </div>
-
           <div id="logs" class="logs-card hidden">
             <div class="logs-header">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
@@ -299,15 +287,6 @@
           <div class="archive-list" id="archiveList"></div>
         </div>
 
-        <div id="teraStreamFiles" class="archive-files hidden">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
-            <span class="terabox-badge">📦 TeraBox Playlist</span>
-            <span style="font-size:0.75rem; font-weight:800; color:var(--text-muted);">Klik video untuk memutar</span>
-          </div>
-          <h3 id="teraStreamTitle" style="font-size:0.95rem; margin-bottom:8px;">Pilih Video untuk Diputar</h3>
-          <div class="archive-list" id="teraStreamList"></div>
-        </div>
-
         <div id="movieInfo" class="movie-info hidden">
           <span class="movie-title" id="movieTitle"></span>
           <span class="imdb-badge hidden" id="imdbBadge"></span>
@@ -321,7 +300,6 @@
         <div id="playerWrapper" class="player-wrapper hidden">
           <div class="player-box" id="playerBox">
             <video id="streamVideo" preload="metadata" playsinline class="video-player"></video>
-            <iframe id="streamIframe" class="stream-embed-frame hidden" allowfullscreen allow="autoplay; fullscreen; picture-in-picture" frameborder="0"></iframe>
             <div class="player-center-overlay" id="centerOverlay">
               <button class="big-play-btn" id="bigPlayBtn" aria-label="Play">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
@@ -363,13 +341,6 @@
             <span class="sub-size-label">Aa</span>
             <input type="range" min="50" max="200" value="100" id="subSizeSlider" class="sub-size-slider">
             <span class="sub-size-value" id="subSizeValue">100%</span>
-          </div>
-          <div id="embedHelperBar" class="embed-helper-bar hidden">
-            <span class="embed-hint">💡 Klik tombol Play di dalam layar video untuk memutar, atau buka:</span>
-            <a id="embedDirectLink" href="#" target="_blank" rel="noopener noreferrer" class="embed-direct-btn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              Buka Player Standalone ↗️
-            </a>
           </div>
         </div>
 
