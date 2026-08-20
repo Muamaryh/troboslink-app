@@ -31,6 +31,7 @@ const targetFiles = [
   'public/app.js',
   'public/security.js',
   'services/bypasser.js',
+  'services/anichin.js',
   'services/streamer.js',
   'services/archive.js',
   'services/subtitle.js'

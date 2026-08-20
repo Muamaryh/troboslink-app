@@ -69,6 +69,13 @@
         </svg>
         Link Streaming
       </button>
+      <button class="tab" id="tabDrama" onclick="switchTab('drama')" role="tab" aria-selected="false">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/>
+        </svg>
+        AIO Short Drama
+        <span class="tab-badge-new">16+ Sources</span>
+      </button>
     </div>
 
     <main>
@@ -416,6 +423,154 @@
             <div class="archive-feature-info">
               <span class="archive-feature-title">Dukungan File ZIP Archive</span>
               <span class="archive-feature-desc">Stream video langsung dari file .zip tanpa harus mengekstrak atau download seluruh file</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== AIO SHORT DRAMA PANEL (Anichin Official) ===== -->
+      <section id="panelDrama" class="hidden">
+        <!-- Drama Top Bar: Sources Pills & Search -->
+        <div class="drama-controls-wrap">
+          <!-- Sources Scroll Bar -->
+          <div class="drama-sources-label">
+            <span class="drama-dot-live"></span>
+            <strong>PILIH PROVIDER DRAMA (16+ SOURCES)</strong>
+          </div>
+          <div class="drama-sources-scroll" id="dramaSourcesBar"></div>
+
+          <!-- Drama Search & Filter Row -->
+          <div class="drama-filter-row">
+            <div class="drama-search-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <input type="text" id="dramaSearchInput" placeholder="Cari judul drama, pemeran, CEO, naga, romance..." autocomplete="off">
+              <button class="drama-search-clear hidden" id="dramaSearchClear" onclick="clearDramaSearch()">&times;</button>
+            </div>
+            <div class="drama-type-chips" id="dramaTypeChips">
+              <button class="type-chip active" data-type="trending" onclick="setDramaFeedType('trending')">🔥 Trending</button>
+              <button class="type-chip" data-type="foryou" onclick="setDramaFeedType('foryou')">✨ For You</button>
+              <button class="type-chip" data-type="hotrank" onclick="setDramaFeedType('hotrank')">🏆 Hot Rank</button>
+              <button class="type-chip" data-type="recommended" onclick="setDramaFeedType('recommended')">💎 Recommended</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Drama Status / Info Banner -->
+        <div class="drama-info-bar">
+          <div class="drama-info-left">
+            <span class="active-source-badge" id="activeSourceBadge">DramaBox</span>
+            <span class="drama-feed-label" id="dramaFeedLabel">Trending Dramas</span>
+          </div>
+          <span class="drama-count-label" id="dramaCountLabel">Memuat katalog...</span>
+        </div>
+
+        <!-- Drama Grid Container -->
+        <div class="drama-grid" id="dramaGrid"></div>
+
+        <!-- Drama Loading Spinner / Shimmer -->
+        <div id="dramaLoader" class="drama-loader hidden">
+          <span class="player-spinner"></span>
+          <span>Mengambil katalog drama dari server...</span>
+        </div>
+
+        <!-- Drama Empty / Error State -->
+        <div id="dramaEmptyState" class="drama-empty-state hidden">
+          <div class="empty-icon">🎭</div>
+          <h3>Tidak ada drama yang ditemukan</h3>
+          <p>Coba kata kunci lain atau pilih provider drama yang berbeda di atas.</p>
+        </div>
+
+        <!-- Drama Pagination -->
+        <div id="dramaPagination" class="drama-pagination hidden">
+          <button class="drama-page-btn" id="dramaPrevBtn" onclick="changeDramaPage(-1)">← Sebelumnya</button>
+          <span class="drama-page-indicator" id="dramaPageIndicator">Halaman 1</span>
+          <button class="drama-page-btn" id="dramaNextBtn" onclick="changeDramaPage(1)">Berikutnya →</button>
+        </div>
+
+        <!-- Drama Watch Theater / Player Modal -->
+        <div id="dramaTheaterModal" class="drama-theater-overlay hidden">
+          <div class="drama-theater-container">
+            <div class="drama-theater-header">
+              <div class="theater-title-wrap">
+                <span class="theater-source-tag" id="theaterSourceTag">DramaBox</span>
+                <h2 class="theater-drama-title" id="theaterDramaTitle">Short Drama Title</h2>
+                <span class="theater-ep-current" id="theaterEpCurrent">Episode 1</span>
+              </div>
+              <button class="drama-theater-close" onclick="closeDramaTheater()" title="Tutup Theater">&times;</button>
+            </div>
+
+            <div class="drama-theater-body">
+              <!-- Left Column: Video Player -->
+              <div class="theater-player-col">
+                <div class="theater-video-wrap" id="theaterVideoWrap">
+                  <video id="dramaVideo" playsinline preload="auto" class="drama-video-element"></video>
+                  <div class="theater-player-overlay" id="theaterPlayerOverlay" onclick="toggleDramaPlay()">
+                    <button class="theater-big-play" id="theaterBigPlay" aria-label="Play">
+                      <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </button>
+                  </div>
+                  <div class="theater-loader hidden-overlay" id="theaterLoader"><span class="player-spinner"></span></div>
+                </div>
+
+                <!-- Custom Theater Controls -->
+                <div class="theater-controls-bar" id="dramaControlsBar">
+                  <input type="range" class="seek-bar" id="dramaSeekBar" min="0" max="1000" step="1" value="0" aria-label="Seek">
+                  <div class="controls-row">
+                    <button class="ctl-btn" id="dramaPlayBtn" onclick="toggleDramaPlay()" aria-label="Play/Pause">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </button>
+                    <span class="time-display"><span id="dramaCurTime">0:00</span><span class="time-sep">/</span><span id="dramaDurTime">0:00</span></span>
+                    <span class="controls-spacer"></span>
+                    <button class="ctl-btn" id="dramaMuteBtn" onclick="toggleDramaMute()" aria-label="Mute">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a9 9 0 0 1 0 14"/></svg>
+                    </button>
+                    <input type="range" class="vol-slider" id="dramaVolSlider" min="0" max="100" value="100" aria-label="Volume">
+                    <select class="speed-select" id="dramaSpeedSelect" onchange="setDramaSpeed(this.value)" aria-label="Speed">
+                      <option value="0.75">0.75x</option>
+                      <option value="1" selected>1.0x</option>
+                      <option value="1.25">1.25x</option>
+                      <option value="1.5">1.5x</option>
+                      <option value="2">2.0x</option>
+                    </select>
+                    <button class="ctl-btn" onclick="toggleDramaFullscreen()" aria-label="Fullscreen">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Theater Control Toolbar -->
+                <div class="theater-controls-toolbar">
+                  <div class="theater-ctl-left">
+                    <button class="theater-btn" onclick="playAdjacentEpisode(-1)" id="theaterPrevEpBtn" title="Episode Sebelumnya">
+                      ⏮️ Ep Sebelumnya
+                    </button>
+                    <button class="theater-btn primary" onclick="playAdjacentEpisode(1)" id="theaterNextEpBtn" title="Episode Berikutnya">
+                      Ep Berikutnya ⏭️
+                    </button>
+                  </div>
+                  <div class="theater-ctl-right">
+                    <label class="auto-next-label">
+                      <input type="checkbox" id="autoNextCheck" checked>
+                      <span>Auto Next</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Drama Synopsis in Theater -->
+                <div class="theater-synopsis-box">
+                  <h4>Sinopsis Drama:</h4>
+                  <p id="theaterSynopsisText">-</p>
+                  <div class="theater-tags-row" id="theaterTagsRow"></div>
+                </div>
+              </div>
+
+              <!-- Right Column: Episodes Drawer -->
+              <div class="theater-episodes-col">
+                <div class="episodes-drawer-header">
+                  <h3>Daftar Episode (<span id="theaterTotalEpsCount">0</span>)</h3>
+                </div>
+                <div class="episodes-grid-scroll" id="theaterEpisodesGrid"></div>
+              </div>
             </div>
           </div>
         </div>

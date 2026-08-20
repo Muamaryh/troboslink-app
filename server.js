@@ -9,6 +9,7 @@ const { detectService, resolveBypass } = require('./services/bypasser');
 const { streamVideoProxy, checkCodec } = require('./services/streamer');
 const { handleArchive } = require('./services/archive');
 const { proxySubtitle, searchMetadata, searchShows } = require('./services/subtitle');
+const { getSources, getFeed, searchDramas, getDramaDetail, getDramaEpisode } = require('./services/anichin');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -210,6 +211,58 @@ app.get('/api/stream/subtitle', proxySubtitle);
 // 6. Metadata & Title Search
 app.get('/api/stream/metadata', searchMetadata);
 app.get('/api/stream/search', searchShows);
+
+// ===== AIO SHORT DRAMA API ROUTES (Anichin Official) =====
+app.get('/api/drama/sources', (req, res) => {
+  try {
+    const sources = getSources();
+    res.json({ success: true, sources });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/drama/feed', async (req, res) => {
+  const { source = 'dramabox', type = 'trending', page = 1 } = req.query;
+  try {
+    const feed = await getFeed(source, type, Number(page));
+    res.json(feed);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/drama/search', async (req, res) => {
+  const { source = 'dramabox', query = '' } = req.query;
+  try {
+    const results = await searchDramas(source, query);
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/drama/detail', async (req, res) => {
+  const { source = 'dramabox', id } = req.query;
+  if (!id) return res.status(400).json({ success: false, error: 'ID drama diperlukan' });
+  try {
+    const detail = await getDramaDetail(source, id);
+    res.json(detail);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/drama/episode', async (req, res) => {
+  const { source = 'dramabox', id, ep = 1 } = req.query;
+  if (!id) return res.status(400).json({ success: false, error: 'ID drama diperlukan' });
+  try {
+    const episode = await getDramaEpisode(source, id, Number(ep));
+    res.json(episode);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 // 7. Status & Health Check
 app.get('/api/health', (req, res) => {
